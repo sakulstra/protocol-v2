@@ -3,15 +3,10 @@ import { getParamPerNetwork } from '../../helpers/contracts-helpers';
 import {
   deployLendingPoolCollateralManager,
   deployWalletBalancerProvider,
-  deployWETHGateway,
   authorizeWETHGateway,
+  deployUiPoolDataProviderV2,
 } from '../../helpers/contracts-deployments';
-import {
-  loadPoolConfig,
-  ConfigNames,
-  getWethAddress,
-  getTreasuryAddress,
-} from '../../helpers/configuration';
+import { loadPoolConfig, ConfigNames, getTreasuryAddress } from '../../helpers/configuration';
 import { getWETHGateway } from '../../helpers/contracts-getters';
 import { eNetwork, ICommonConfiguration } from '../../helpers/types';
 import { notFalsyOrZeroAddress, waitForTx } from '../../helpers/misc-utils';
@@ -21,7 +16,7 @@ import {
   getAaveProtocolDataProvider,
   getLendingPoolAddressesProvider,
 } from '../../helpers/contracts-getters';
-import { ZERO_ADDRESS } from '../../helpers/constants';
+import { chainlinkAggregatorProxy, chainlinkEthUsdAggregatorProxy } from '../../helpers/constants';
 
 task('full:initialize-lending-pool', 'Initialize lending pool configuration.')
   .addFlag('verify', 'Verify contracts at Etherscan')
@@ -50,6 +45,8 @@ task('full:initialize-lending-pool', 'Initialize lending pool configuration.')
       const testHelpers = await getAaveProtocolDataProvider();
 
       const admin = await addressesProvider.getPoolAdmin();
+      const oracle = await addressesProvider.getPriceOracle();
+
       if (!reserveAssets) {
         throw 'Reserve assets is undefined. Check ReserveAssets configuration at config directory';
       }
@@ -66,6 +63,7 @@ task('full:initialize-lending-pool', 'Initialize lending pool configuration.')
         admin,
         treasuryAddress,
         incentivesController,
+        pool,
         verify
       );
       await configureReservesByHelper(ReservesConfig, reserveAssets, testHelpers, admin);
@@ -101,6 +99,13 @@ task('full:initialize-lending-pool', 'Initialize lending pool configuration.')
       );
 
       await deployWalletBalancerProvider(verify);
+
+      const uiPoolDataProvider = await deployUiPoolDataProviderV2(
+        chainlinkAggregatorProxy[localBRE.network.name],
+        chainlinkEthUsdAggregatorProxy[localBRE.network.name],
+        verify
+      );
+      console.log('UiPoolDataProvider deployed at:', uiPoolDataProvider.address);
 
       const lendingPoolAddress = await addressesProvider.getLendingPool();
 

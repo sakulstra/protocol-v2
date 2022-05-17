@@ -37,7 +37,7 @@ import {
 } from '../types';
 import { IERC20DetailedFactory } from '../types/IERC20DetailedFactory';
 import { getEthersSigners, MockTokenMap } from './contracts-helpers';
-import { DRE, getDb, notFalsyOrZeroAddress } from './misc-utils';
+import { DRE, getDb, notFalsyOrZeroAddress, omit } from './misc-utils';
 import { eContractid, PoolConfiguration, tEthereumAddress, TokenContractId } from './types';
 
 export const getFirstSigner = async () => (await getEthersSigners())[0];
@@ -170,15 +170,30 @@ export const getAllMockedTokens = async () => {
   return tokens;
 };
 
+export const getQuoteCurrencies = (oracleQuoteCurrency: string): string[] => {
+  switch (oracleQuoteCurrency) {
+    case 'USD':
+      return ['USD'];
+    case 'ETH':
+    case 'WETH':
+    default:
+      return ['ETH', 'WETH'];
+  }
+};
+
 export const getPairsTokenAggregator = (
   allAssetsAddresses: {
     [tokenSymbol: string]: tEthereumAddress;
   },
-  aggregatorsAddresses: { [tokenSymbol: string]: tEthereumAddress }
+  aggregatorsAddresses: { [tokenSymbol: string]: tEthereumAddress },
+  oracleQuoteCurrency: string
 ): [string[], string[]] => {
-  const { ETH, WETH, ...assetsAddressesWithoutEth } = allAssetsAddresses;
+  const assetsWithoutQuoteCurrency = omit(
+    allAssetsAddresses,
+    getQuoteCurrencies(oracleQuoteCurrency)
+  );
 
-  const pairs = Object.entries(assetsAddressesWithoutEth).map(([tokenSymbol, tokenAddress]) => {
+  const pairs = Object.entries(assetsWithoutQuoteCurrency).map(([tokenSymbol, tokenAddress]) => {
     //if (true/*tokenSymbol !== 'WETH' && tokenSymbol !== 'ETH' && tokenSymbol !== 'LpWETH'*/) {
     const aggregatorAddressIndex = Object.keys(aggregatorsAddresses).findIndex(
       (value) => value === tokenSymbol
@@ -393,10 +408,10 @@ export const getParaSwapLiquiditySwapAdapter = async (address?: tEthereumAddress
     await getFirstSigner()
   );
 
-  export const getParaSwapRepayAdapter = async (address?: tEthereumAddress) =>
+export const getParaSwapRepayAdapter = async (address?: tEthereumAddress) =>
   await ParaSwapRepayAdapterFactory.connect(
     address ||
       (await getDb().get(`${eContractid.ParaSwapRepayAdapter}.${DRE.network.name}`).value())
         .address,
     await getFirstSigner()
-  );  
+  );
