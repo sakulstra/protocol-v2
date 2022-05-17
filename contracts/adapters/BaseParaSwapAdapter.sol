@@ -34,6 +34,8 @@ abstract contract BaseParaSwapAdapter is FlashLoanReceiverBase, Ownable {
 
   // Max slippage percent allowed
   uint256 public constant MAX_SLIPPAGE_PERCENT = 3000; // 30%
+  // Allowed imprecision for tokens with rounding issues between transfer and balanceOf
+  uint256 public constant ALLOWED_IMPRECISION = 5;
 
   IPriceOracleGetter public immutable ORACLE;
 

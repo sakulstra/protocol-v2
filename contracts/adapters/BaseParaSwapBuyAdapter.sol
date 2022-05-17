@@ -23,7 +23,7 @@ abstract contract BaseParaSwapBuyAdapter is BaseParaSwapAdapter {
     IParaSwapAugustusRegistry augustusRegistry
   ) public BaseParaSwapAdapter(addressesProvider) {
     // Do something on Augustus registry to check the right contract was passed
-    require(!augustusRegistry.isValidAugustus(address(0)), "Not a valid Augustus address");
+    require(!augustusRegistry.isValidAugustus(address(0)), 'Not a valid Augustus address');
     AUGUSTUS_REGISTRY = augustusRegistry;
   }
 
@@ -67,6 +67,12 @@ abstract contract BaseParaSwapBuyAdapter is BaseParaSwapAdapter {
     }
 
     uint256 balanceBeforeAssetFrom = assetToSwapFrom.balanceOf(address(this));
+    if (
+      balanceBeforeAssetFrom < maxAmountToSwap &&
+      maxAmountToSwap - balanceBeforeAssetFrom <= ALLOWED_IMPRECISION
+    ) {
+      maxAmountToSwap = balanceBeforeAssetFrom;
+    }
     require(balanceBeforeAssetFrom >= maxAmountToSwap, 'INSUFFICIENT_BALANCE_BEFORE_SWAP');
     uint256 balanceBeforeAssetTo = assetToSwapTo.balanceOf(address(this));
 
