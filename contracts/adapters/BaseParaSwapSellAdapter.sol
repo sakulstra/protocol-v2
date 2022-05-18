@@ -67,13 +67,11 @@ abstract contract BaseParaSwapSellAdapter is BaseParaSwapAdapter {
     }
 
     uint256 balanceBeforeAssetFrom = assetToSwapFrom.balanceOf(address(this));
-    if (
-      balanceBeforeAssetFrom < amountToSwap &&
-      amountToSwap - balanceBeforeAssetFrom <= ALLOWED_IMPRECISION
-    ) {
-      amountToSwap = balanceBeforeAssetFrom;
-    }
-    require(balanceBeforeAssetFrom >= amountToSwap, 'INSUFFICIENT_BALANCE_BEFORE_SWAP');
+    require(
+      balanceBeforeAssetFrom >= amountToSwap ||
+        (amountToSwap - balanceBeforeAssetFrom <= ALLOWED_IMPRECISION),
+      'INSUFFICIENT_BALANCE_BEFORE_SWAP'
+    );
     uint256 balanceBeforeAssetTo = assetToSwapTo.balanceOf(address(this));
 
     address tokenTransferProxy = augustus.getTokenTransferProxy();
@@ -103,7 +101,7 @@ abstract contract BaseParaSwapSellAdapter is BaseParaSwapAdapter {
       }
     }
     require(
-      assetToSwapFrom.balanceOf(address(this)) == balanceBeforeAssetFrom - amountToSwap,
+      assetToSwapFrom.balanceOf(address(this)) >= balanceBeforeAssetFrom - amountToSwap,
       'WRONG_BALANCE_AFTER_SWAP'
     );
     amountReceived = assetToSwapTo.balanceOf(address(this)).sub(balanceBeforeAssetTo);
